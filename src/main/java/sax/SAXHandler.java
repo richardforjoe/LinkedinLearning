@@ -3,6 +3,7 @@ package sax;
 import dataprovider.model.Customer;
 import org.xml.sax.Attributes;
 import org.xml.sax.SAXException;
+import org.xml.sax.SAXParseException;
 import org.xml.sax.helpers.DefaultHandler;
 import dataprovider.dataprovider.DataProvider;
 
@@ -38,22 +39,28 @@ public class SAXHandler extends DefaultHandler{
     private Customer customer;
     private String currentElement = "";
     private StringBuilder currentText;
+    private Boolean IsANameSpace = true;
 
 
     private static final String XMLDATEFORMAT = "yyy-MM-dd'T'HH:mm:ss";
 
-    public List<Customer> readDataFromXML(String filename) throws SAXException, ParserConfigurationException, IOException {
+    public List<Customer> readDataFromXML(String filename) throws ParserConfigurationException, IOException {
 
         //Code that will parse document
         //Public method, readDatafromXML which receives the filename
-        SAXParserFactory factory = SAXParserFactory.newInstance();
-        SAXParser parser = factory.newSAXParser();
+        try {
+            SAXParserFactory factory = SAXParserFactory.newInstance();
 
-        parser.parse(new File(filename), this);
+            //To enable awareness of namespaces - needs to be before the parser object
+            factory.setNamespaceAware(IsANameSpace);
+            SAXParser parser = factory.newSAXParser();
 
+            parser.parse(new File(filename), this);
+        } catch (SAXException e) {
+            System.out.println(e.getMessage());
+        }
         return data;
     }
-
     @Override
     public void startDocument() throws SAXException {
         System.out.println("Start document");
@@ -70,7 +77,11 @@ public class SAXHandler extends DefaultHandler{
     public void startElement(String uri, String localName, String qName, Attributes attributes) throws SAXException {
         super.startElement(uri, localName, qName, attributes);
         System.out.println("Start element: " + qName);
-        currentElement = qName;
+        if (localName != "") {
+            currentElement = localName;
+        } else {
+            currentElement = qName;
+        }
 
         switch (currentElement) {
             case "customers":
@@ -141,7 +152,22 @@ public class SAXHandler extends DefaultHandler{
         if (currentText != null) {
             currentText.append(ch, start, length);
         }
+
+
     }
 
+    @Override
+    public void warning(SAXParseException e) throws SAXException {
+        System.out.println("Warning!!");
+    }
 
+    @Override
+    public void error(SAXParseException e) throws SAXException {
+        System.out.println("Error");
+    }
+
+    @Override
+    public void fatalError(SAXParseException e) throws SAXException {
+        System.out.println("fataError!!!");
+    }
 }
